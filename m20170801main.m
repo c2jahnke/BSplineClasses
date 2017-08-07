@@ -1,165 +1,41 @@
-clc, clear all, close all
+function m20170801main()
     %parameters
-    addpath('/home/laptop/Documents/_mat_files/')
-    basis = bSplBas(0,5,2,1,0.1);
-    par = parameters();
-    n = basis.n;
-    p = basis.p;
-    N = bSplBasFun(2,basis);
-    N.plotOneBasisFun(N.generOneBasisFun)
-    nDer = 1
-%     p = 2;
-%     a = 0;
-%     b = 12;
-%     nDer = 1;   
-%     knotVector = ConstrKnotVector(a,b,0.1,p);
-%     
-%     resol = 0.1;
-%     plotVector = knotVector(1):resol:knotVector(end);
-%     sP = size(plotVector,2);
-%     m = size(knotVector,2);
-%     n = m - p - 1; % NURBS book: n = m - p -1, number of basis functions
-%    tableSpan = lookuptablespan(basis.knotVector,basis.m,basis.plotVector,basis.sP);
-     V0 = basis.generBasis();
-     figure
-     basis.plotBasisStruct(V0);
-     figure;
-     ders = basis.gener1Deriv();
-     basis.plotBasisStruct(ders)
-        movegui('west')
-        
-     
-    % BasisFun(2,p,0.5,basis.knotVector) %(i,p,u,U)
-     %DersBasisFuns(3,1.5,p,nDer,basis.knotVector) %(p,m,U,i,u,n)
-     %DersBasisFuns(i,u,p,n,U)
-if (basis.p<5)
-ngp = 5;
-else
-    ngp = 5; % change this to p later on
-end
+    %addpatgit 
+    %h('/home/laptop/Documents/_mat_files/')
+    N = 15;
+    basis = bSplBas(0,10,2,N,0.1);
+    %par = parameters();
+     n = basis.n;
+     p = basis.p;
+     plotVector = basis.plotVector;
+     sP = basis.sP;
+%     N = bSplBasFun(2,basis);
+%     nDer = 1;
+% %     n = m - p - 1; % NURBS book: n = m - p -1, number of basis functions
+% %    tableSpan = lookuptablespan(basis.knotVector,basis.m,basis.plotVector,basis.sP);
+%      V0 = basis.generBasis();
+%      ders = basis.gener1Deriv();
 
-switch(ngp)
-    case 1
-        s = 0;
-        w = 2;
-    case 2
-        s = [-sqrt(1/3), sqrt(1/3)]';
-        w = [1 ,1 ]';
-    case 3
-        s = [-0.774596669241, 0, 0.774596669241]';
-        w = [5/9, 8/9, 5/9]';
-    case 4
-        s = [-0.861136311594053, -0.339981043584856, 0.339981043584856,0.861136311594053]';
-        w = [0.347854845137454, 0.652145154862546, 0.652145154862546, 0.347854845137454]';
-    case 5
-        s = [-0.906179845938664, -0.538469310105683, 0, 0.538469310105683, 0.906179845938664]';
-        w = [0.236926885056189, 0.478628670499366, 0.568888888888889, 0.478628670499366, 0.236926885056189]';
-end
-
-    erg = zeros(basis.n - basis.p, basis.p+1);
-    for k = basis.p+1:(basis.n) % for loop over knots/elements
-        hS = (basis.knotVector(k+1)-basis.knotVector(k))/2;
-        mid = (basis.knotVector(k+1)+basis.knotVector(k))/2;
-        gPoints = s*hS+mid; % scale/transform gaussian points
-        qGauss=zeros(size(gPoints,1),basis.p+1); % evaluate all p+1 functions on one element
-        for i=1:size(gPoints,1)
-            
-            temp = DersBasisFuns(k-1,gPoints(i),p,nDer,basis.knotVector)
-            qGauss(i,:) = temp(2,:) % evaluated derivatives on all Gauss points
-        end
-        %% generate elementwise stiffness matrix
-        
-        Ael = zeros(p+1);
-        qGaussEl = zeros(ngp,(p+1)^2); % what is this
-        count = 0;
-        for ll = 1 : p+1
-            for kk = 1 : ll
-                count = count +1;
-                qGaussEl(:,count) = qGauss(:,ll).*qGauss(:,kk);
-                Ael(ll,kk) = hS*(w'*qGaussEl(:,count));
-                if (kk ~= ll)
-                Ael(kk,ll) = Ael(ll,kk);
-                end
-            end
-        end
-        elStiffAr(:,:,k) = Ael
-    end
-        %% assemble stiffness matrix:
-        A = zeros(basis.m);
-        for l = 1 : n
-            ke = l:l+p
-            A(ke,ke) = A(ke,ke)+elStiffAr(:,:,k)
-        end
-    
-    % assemlin(ngp,f);
-    %% elementwise gaussian quadrature
-    % we need to find a way to set up elementwise gaussian quadrature
-    % use DersOneBasisFun(p,m,knotVector,i,plotVector(j),n)
-    % set up product
-    
-
-%         %% test Curve evaluation
-%     % The minimum number of control points = p+1 + #(inner points)
-%     
-%     %hold off
-%     %% use 2D surface plots
-% %      iU = 0;
-% %      iV = 0;
-% %      plotOne2Dbasis(p,m,knotVector,iU,iV,plotVector,sP,resol);
-% %      figure
-% %       plot2DBasis(p,m,knotVector,plotVector,sP,resol)
-%     %%%%%%%%%%%%%%%%%%%%%% Linear Finite Elements!
-%     %assembly of A (stiffness matrix) and b (Lastvektor)
-%     
-    %f =@(x) 1;
-    f = @(x) sin(x);
-
-    %% dummy integration
-    % problem: depends on the resolution of plots
-    bdummy = zeros(n,1);
-    Adummy = zeros(n);
-    for k = 1:n
-        for l = 1:k
-            if k-l < p+1 
-                Adummy(k,l) = sum(ders(:,k).*ders(:,l)*basis.resol); % resolution-dependent quadrature
-                Adummy(l,k) = Adummy(k,l); % use guassian quadrature for p = 5, with 5 Gausspoints per element
-            end
-        end
-        bdummy(k) = sum(f(basis.plotVector(:)).*ders(:,k)*basis.resol);
-    end
-    
-    udummy = Adummy(2:end,2:end)\bdummy(2:end);
-    figure
-    spy(Adummy);
-  
-    %% how can we integrate to generate A?  
-    % Generate A! Construct (gaussian) quadrature
-    
-    U = basis.knotVector;
-    xAss = unique(U);
-  
-    [A,b] = assemlin(xAss,f); % use elementwise assembly for IGA
-    A_ = A(2:end,2:end);
-    b_ = b(2:end);
-    u = A_\b_;
-      uPlotVector = basis.knotVector(2:end-p-1);
-    plot(uPlotVector, udummy,'b-');
-    hold on;
-    plot(basis.plotVector(:), f(basis.plotVector(:)),'r-');
-    
-    %plot(basis.knotVector(4:end),u);
-    legend('assembled solution','real solution','FEM-solution');
-    movegui('southeast')
+% %         %% test Curve evaluation
+% %     % The minimum number of control points = p+1 + #(inner points)
+% %     
+% %     %hold off
+% %     %% use 2D surface plots
+% % %      iU = 0;
+% % %      iV = 0;
+% % %      plotOne2Dbasis(p,m,knotVector,iU,iV,plotVector,sP,resol);
+% % %      figure
+% % %       plot2DBasis(p,m,knotVector,plotVector,sP,resol)
 
     Omega0 = [basis.a basis.b];
     Omega1 = [basis.a+floor((basis.a+basis.b)/4)+1 basis.b-2];
-    h0 = 4;% generalize! So far works for pairs (1,0.5),(2,0.5)
-    h1 = 2;
+    h0 = 1;% generalize! So far works for pairs (1,0.5),(2,0.5)
+    h1 = 0.5;
     
     
    
     TOL = 10e-5;
-    [Char0, Char1, HB0, HB1, V0, V1, U, Ubar, Points, Qw] = OneDimHbRefinement(par,Omega0,Omega1,h0,h1);
+    [Char0, Char1, HB0, HB1, V0, V1, U, Ubar, Points, Qw] = OneDimHbRefinement(basis,Omega0,Omega1,h0,h1);
     hold off;
     
     plotPartBasis(basis.plotVector,size(HB0,2),HB0,'r-')
@@ -167,7 +43,7 @@ end
     plotPartBasis(basis.plotVector,size(HB1,2),HB1,'b-')
     
     
-    [THB0, trunq, q] = OneDimThb(Omega0,Omega1,h0,h1,V0,V1,U,Ubar,Char1,TOL,par);
+    [THB0, trunq, q] = OneDimThb(Omega0,Omega1,h0,h1,V0,V1,U,Ubar,Char1,TOL,basis);
     % to check partition of unity
     % sum(THB0(k,:))+sum(HB1(k,:))
 
@@ -191,7 +67,8 @@ end
     Points = zeros(basis.n,2);
     Points(:,1) = linspace(0,1, size(Points,1) );
     Points(:,2) = (Points(:,1) -0.1).^3 .*(Points(:,1) -0.9 ).^3;
-    % ImpointCurvePlot(n,sP,p,U,plotVector,Points)
+    % does not work!
+    ImpointCurvePlot(basis.n,basis.sP,basis.p,basis.knotVector,basis.plotVector,Points)
     %% knot insertion
 %     np = n;
 %     r = 1;
@@ -203,9 +80,15 @@ end
     X = [0.5 1.5 2.5 3.5 4.5];
     r= size(X,2)-1;
     [Ubar, Qw] = RefineKnotVectCurve(basis.n,basis.p,basis.knotVector,Points,X,r);
-%     figure
-%     ImpointCurvePlot(n+r,sP,p,Ubar,plotVector,Qw)
-function erg = gQuadBasis(par)
+    %     figure
+    % does not work so far
+    ImpointCurvePlot(n+r,sP,p,Ubar,plotVector,Qw)
+     
+     
+     
+     
+     
+function erg = gQuadBasis(basis)
 if (basis.p<5)
 ngp = basis.p;
 else
@@ -432,7 +315,7 @@ end
     function ImpointCurvePlot(n,sP,p,U,plotVector,Points)
 
         C = zeros( sP , 2 );
-        for l = 1:sP
+        for l = 1:sP % work around, make sure other points are not needed
             C(l,:) = CurvePoint(n,p,U,Points,plotVector(l));
         end
         plt_curve = plot(C(:,1),C(:,2),'r.');
@@ -619,7 +502,8 @@ end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Nurbs Book algorithm A2.2
     % evaluate basis function
-    function N = BasisFun(i,p,u,U) % careful: differnt input parameter order (u,p switched)
+    function N = BasisFun(i,u,p,U) 
+    % change order at every invocation
     %--------------------------------------------------------------
     %function N = BasisFun(i,p,u,U)
     % NURBS-Book (algorithm A2.2)
@@ -794,10 +678,7 @@ end
     % Output    ders
     ders = zeros(1,n+1);
     if ( u< U(i+1) || u >= U(i+p+2) )
-        for k= 0:n
-            ders(k+1) = 0;
             return;
-        end
     end
     N = zeros(p+2,n+1); % changed to p+2, maybe p+1 suffices
     for j=0:p % initialize 0-degree functions
@@ -840,9 +721,10 @@ end
             end
             for j=0:(k-jj) % index as in Nurbs Book
                 Uleft = U(i+j+2);
-                Uright = U(i+j+p+jj+2);
+                Uright = U(i+j+p+jj+1); % changed from +2 to +1
                 if( ND(j+2) == 0)
                     ND(j+1) = (p-k+jj)*saved;
+                    saved = 0;
                 else
                     temp = ND(j+2)/(Uright -Uleft);
                     ND(j+1) = (p-k+jj)*(saved-temp);
@@ -867,7 +749,7 @@ end
     % Output:   C curve point
 
     span = FindSpan(n,p,u,U);
-    N = BasisFun(span,p,u,U);
+    N = BasisFun(span,u,p,U); %BasisFun(i,u,p,U) 
     if( span+1 > length(P) )
         C = P(end,:);
     else
@@ -949,58 +831,7 @@ end
             end
         end
     end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Algorithm A5.4
-    % still needs to be debugged
-    function [Ubar,Qw] = RefineKnotVectCurve(n,p,U,Pw,X,r)
-    % refine curve knot vector
-    % Input:    n = m - p -1
-    %           p degree
-    %           U knot vector
-    %           Pw control points
-    %           X set(vector) of knots to be inserted into U
-    %           r size of X
-    % Output    Ubar new knot vector
-    %           Qw knot control points
-    % 
-    n = n-1; %ok
-    m = n+p+1; %ok
-    a = FindSpan(n,p,X(1),U); %ok
-    b = FindSpan(n,p,X(r+1),U); %ok   
-    b = b+1; %ok
-    % initializations
-    Ubar = zeros(1,m+r+2); %ok
-    Qw = zeros(size(Pw,1)+r+1,2); % ?
-    
-    Qw(1:a-p+1,:) = Pw(1:a-p+1,:); %correct
-    Qw(b+r+1:n+r+2,:) = Pw(b:n+1,:); % not sure
-    Ubar(1:a+1) = U(1:a+1); % correct
-    Ubar(b+p+r+1:m+r+2) = U(b+p:m+1); % not sure, check indices
-    
-    i = b+p;
-    k = b+p+r+1;
-    for j = r:-1:0
-        while(X(j+1) <= U(i+1) && i > a)
-            Qw(k-p,:) = Pw(i-p,:); % maybe add minus 1
-            Ubar(k+1) = U(i+1);
-            k = k-1; i = i-1;
-        end
-        Qw(k-p,:) = Qw(k-p+1,:); % some error here
-        for l = 1:p
-            ind = k-p+1;
-            alfa = Ubar(k+l+1) - X(j+1);
-            if (abs(alfa) == 0)
-                Qw(ind,:) = Qw(ind+1,:);
-            else
-                alfa = alfa/(Ubar(k+l+1) - Ubar(i-p+l+1));
-                Qw(ind,:) = alfa*Qw(ind,:) + (1-alfa)*Qw(ind+1,:);
-            end
-        end
-        Ubar(k+1) = X(j+1);
-        k = k-1;
-    end
-    end
-    
+   
 
    
- 
+end
